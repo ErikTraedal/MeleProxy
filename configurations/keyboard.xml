@@ -1,0 +1,7 @@
+<keymap>
+  <global>
+    <keyboard name="Mele F10 proxy">
+      <ok>Select</ok>
+    </keyboard>
+  </global>
+</keymap>

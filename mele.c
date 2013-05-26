@@ -34,8 +34,7 @@ void send_key_from_input_data(int uinput_fd, char *data_buffer, int data_length)
 		// Key up event
 		if (memcmp(data_buffer, MELE_DEVICE_0_KEY_UP, data_length) == 0) {
 			if (current_key_press_device_0 != 0) {
-				debug(
-						("Sending release for key %x\n", current_key_press_device_0));
+				debug("Sending release for key %i\n", current_key_press_device_0);
 				send_key_release_event(uinput_fd, current_key_press_device_0);
 				current_key_press_device_0 = 0;
 				return;
@@ -78,6 +77,7 @@ void send_key_from_input_data(int uinput_fd, char *data_buffer, int data_length)
 
 		if (data_buffer[1] == 0x00) {
 			// We have an movement event 0x01 0x00
+//			debug("Got movement event, ignoring next up event\n");
 			ignore_next_up_event_device_1 = 1;
 			return;
 		}
@@ -90,6 +90,7 @@ void send_key_from_input_data(int uinput_fd, char *data_buffer, int data_length)
 							device_1_key_table[i].key);
 					send_key_press_event(uinput_fd, device_1_key_table[i].key);
 					current_key_press_device_1 = device_1_key_table[i].key;
+					ignore_next_up_event_device_1 = 0;
 					return;
 				}
 			}
@@ -130,7 +131,11 @@ int main(int argc, char **argv) {
 	int uinput_fd = -1;
 	struct udev_devices devices;
 	char *data_buffer;
-	int ret, i;
+	int ret, c, foreground;
+#ifdef DEBUG
+	int i;
+	printf("Compiled with debug flag\n");
+#endif
 
 	// Handle signals
 	if (signal(SIGINT, signal_handler) == SIG_ERR )
@@ -154,11 +159,25 @@ int main(int argc, char **argv) {
 		exit(EXIT_FAILURE);
 	}
 
-	pid = fork();
+	// Parse command line arguments
+    while ((c = getopt(argc, argv, "f")) != -1) {
+        switch(c) {
+        case 'f':
+            foreground = 1;
+            break;
+        }
+    }
+
+    if(foreground != 1) {
+		printf("\nStarting in background\n");
+    	pid = fork();
+    }
+    else {
+    	printf("\nStarting in foreground\n");
+    }
 
 	// Child process
-	if (pid == 0) {
-		printf("\nRunning in background\n");
+	if (pid == 0 || foreground) {
 
 		// Allocate memory for data buffer
 		data_buffer = malloc(30);
@@ -168,6 +187,8 @@ int main(int argc, char **argv) {
 
 			if (ret > 0) {
 				send_key_from_input_data(uinput_fd, data_buffer, ret);
+
+#ifdef DEBUG
 				debug("Got data (%i): ", ret);
 
 				// Do something with the data
@@ -176,6 +197,7 @@ int main(int argc, char **argv) {
 				}
 
 				debug("\n");
+#endif
 			}
 		}
 

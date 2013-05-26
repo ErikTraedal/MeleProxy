@@ -9,9 +9,9 @@
 #define DEBUG_H_
 
 #ifdef DEBUG
-#define debug(...) do{ fprintf( stderr, __VA_ARGS__ ); } while( 0 )
+#define debug(...) fprintf(stderr, __VA_ARGS__)
 #else
-#define debug(...) do{ } while ( 0 )
+#define debug(...)
 #endif
 
 #endif /* DEBUG_H_ */
