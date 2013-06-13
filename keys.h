@@ -11,7 +11,7 @@ struct keymap {
 static const struct keymap keymap_keys[] = {
 		{KEY_VOLUMEUP, KEY_KPPLUS},
 		{KEY_VOLUMEDOWN, KEY_KPMINUS},
-		{BTN_LEFT, KEY_OK},
+		{BTN_LEFT, KEY_ENTER},
 		{BTN_RIGHT, KEY_PREVIOUS},
 		{BTN_MIDDLE, KEY_EPG},
 		{KEY_LEFT, KEY_LEFT},

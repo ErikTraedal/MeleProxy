@@ -69,11 +69,9 @@ int main(int argc, char **argv) {
 	struct udev_devices devices;
 //	char *data_buffer;
 	struct input_event *event;
-	int ret, c, foreground;
-#ifdef DEBUG
-	int i;
-	printf("Compiled with debug flag\n");
-#endif
+	int ret, c, foreground = 0;
+
+	debug("Compiled with debug flag\n");
 
 	// Handle signals
 	if (signal(SIGINT, signal_handler) == SIG_ERR )
@@ -111,7 +109,7 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	if (foreground != 1) {
+	if (foreground == 0) {
 		printf("\nStarting in background\n");
 		pid = fork();
 	} else {
@@ -119,30 +117,16 @@ int main(int argc, char **argv) {
 	}
 
 	// Child process
-	if (pid == 0 || foreground) {
-
-//		// Allocate memory for data buffer
-//		data_buffer = malloc(30);
-
+	if (pid == 0 || foreground == 1) {
 		event = malloc(sizeof(struct input_event));
 
 		while (running) {
 			ret = read_event_data(&devices, event);
 
 			if (ret > 0) {
-//				send_key_from_input_data(uinput_fd, data_buffer, ret);
 				handle_input_event(uinput_fd, event, lookup_table);
 
-#ifdef DEBUG
 				debug("Got event (%hu:%hu:%hu)\n", event->type, event->code, event->value);
-
-//				// Do something with the data
-//				for (i = 0; i < ret; i++) {
-//					debug("\\x%.2x", data_buffer[i]);
-//				}
-
-//				debug("\n");
-#endif
 			}
 		}
 
@@ -151,8 +135,6 @@ int main(int argc, char **argv) {
 		free(event);
 		free(lookup_table);
 
-	} else {
-		// Parent process
 	}
 
 	return 0;

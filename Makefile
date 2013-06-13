@@ -1,7 +1,7 @@
 INCLUDES =
  
 CC = gcc -g -Wno-deprecated
-CFLAGS = -c $(INCLUDES) -D DEBUG
+CFLAGS = -c $(INCLUDES)
 LIBS = -ludev
 
 all : mele

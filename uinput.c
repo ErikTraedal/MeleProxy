@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #include "uinput.h"
+#include "debug.h"
 #include "keys.h"
 
 
@@ -12,7 +13,7 @@
 void handle_input_event(int uinput_fd, struct input_event *event, struct key_lookup_table *table) {
 	if(event->type != EV_REL) {
 		if(event->type == EV_KEY && *(table->key_table + event->code) != 0) {
-			printf("sending event of type %i, with code %i instead of code %i\n", event->type, *(table->key_table + event->code), event->code);
+			debug("sending event of type %i, with code %i instead of code %i\n", event->type, *(table->key_table + event->code), event->code);
 			event->code = *(table->key_table + event->code);
 			write(uinput_fd, event, sizeof(struct input_event));
 		} else {
