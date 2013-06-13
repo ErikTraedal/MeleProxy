@@ -7,8 +7,22 @@
 #include "uinput.h"
 #include "keys.h"
 
+
+// Handles the input events, forwards or drops
+void handle_input_event(int uinput_fd, struct input_event *event, struct key_lookup_table *table) {
+	if(event->type != EV_REL) {
+		if(event->type == EV_KEY && *(table->key_table + event->code) != 0) {
+			printf("sending event of type %i, with code %i instead of code %i\n", event->type, *(table->key_table + event->code), event->code);
+			event->code = *(table->key_table + event->code);
+			write(uinput_fd, event, sizeof(struct input_event));
+		} else {
+			write(uinput_fd, event, sizeof(struct input_event));
+		}
+	}
+}
+
 // Returns the uinput_fd
-int setup_uinput_device() {
+int setup_uinput_device(struct key_lookup_table *table) {
 	int uinput_fd = -1;
 	struct uinput_user_dev uidev;
 	int i;
@@ -30,19 +44,11 @@ int setup_uinput_device() {
 	if (ioctl(uinput_fd, UI_SET_EVBIT, EV_KEY) < 0)
 		return -1;
 
-	// Device 0
-	for(i = 0;i < NUMBER_OF_DEVICE_0_KEYS;i++) {
-		if (ioctl(uinput_fd, UI_SET_KEYBIT, device_0_key_table[i].key) < 0) return -1;
-	}
-
-	// Device 1
-	for(i = 0;i < NUMBER_OF_DEVICE_1_KEYS;i++) {
-		if (ioctl(uinput_fd, UI_SET_KEYBIT, device_1_key_table[i].key) < 0) return -1;
-	}
-
-	// Device 2
-	for(i = 0;i < NUMBER_OF_DEVICE_2_KEYS;i++) {
-		if (ioctl(uinput_fd, UI_SET_KEYBIT, device_2_key_table[i].key) < 0) return -1;
+	// Map all keys in table
+	for(i = 1;i <= table->max_value;i++){
+		if(*(table->key_table + i) != 0) {
+			ioctl(uinput_fd, UI_SET_KEYBIT, *(table->key_table + i));
+		}
 	}
 
 	if (write(uinput_fd, &uidev, sizeof(uidev)) < 0)
@@ -59,40 +65,5 @@ int destroy_uinput_device(int uinput_fd) {
 		return -1;
 
 	return close(uinput_fd);
-}
-
-void send_key_event(int uinput_fd, ushort key) {
-	send_key_press_event(uinput_fd, key);
-	send_key_release_event(uinput_fd, key);
-}
-
-void send_key_press_event(int uinput_fd, ushort key) {
-	struct input_event ev;
-	memset(&ev, 0, sizeof(ev));
-
-	ev.type = EV_KEY;
-	ev.code = key;
-	ev.value = 1;
-	write(uinput_fd, &ev, sizeof(ev));
-
-	ev.type = EV_SYN;
-	ev.code = SYN_REPORT;
-	ev.value = 0;
-	write(uinput_fd, &ev, sizeof(ev));
-}
-
-void send_key_release_event(int uinput_fd, ushort key) {
-	struct input_event ev;
-	memset(&ev, 0, sizeof(ev));
-
-	ev.type = EV_KEY;
-	ev.code = key;
-	ev.value = 0;
-	write(uinput_fd, &ev, sizeof(ev));
-
-	ev.type = EV_SYN;
-	ev.code = SYN_REPORT;
-	ev.value = 0;
-	write(uinput_fd, &ev, sizeof(ev));
 }
 

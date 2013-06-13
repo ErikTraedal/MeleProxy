@@ -7,9 +7,10 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <signal.h>
+#include <linux/input.h>
+#include "keys.h"
 #include "uinput.h"
 #include "udev.h"
-#include "keys.h"
 #include "mele.h"
 #include "debug.h"
 
@@ -25,112 +26,49 @@ void signal_handler(int number) {
 	// Close all handles
 }
 
-void send_key_from_input_data(int uinput_fd, char *data_buffer, int data_length) {
-	int i;
+void create_lookup_table(struct key_lookup_table *table) {
+	int i, number_of_items;
 
-	// Device 0 data
-	if (data_buffer[0] == 0x00) {
+	printf("Creating lookup table\n");
+	number_of_items = sizeof(keymap_keys) / sizeof(keymap_keys[0]);
 
-		// Key up event
-		if (memcmp(data_buffer, MELE_DEVICE_0_KEY_UP, data_length) == 0) {
-			if (current_key_press_device_0 != 0) {
-				debug("Sending release for key %i\n", current_key_press_device_0);
-				send_key_release_event(uinput_fd, current_key_press_device_0);
-				current_key_press_device_0 = 0;
-				return;
-			}
-		}
+	// Find the max value
+	for (i = 0; i < number_of_items; i++) {
+		if (keymap_keys[i].key > table->max_value)
+			table->max_value = keymap_keys[i].key;
+	}
 
-		for (i = 0; i < NUMBER_OF_DEVICE_0_KEYS; i++) {
-			if (memcmp(data_buffer, device_0_key_table[i].data, data_length)
-					== 0) {
-				if (current_key_press_device_0 != device_0_key_table[i].key) {
-					debug("Got match. Sending key %x\n",
-							device_0_key_table[i].key);
-					send_key_press_event(uinput_fd, device_0_key_table[i].key);
-					current_key_press_device_0 = device_0_key_table[i].key;
-					return;
-				}
-			}
+	// Allocate memory for lookup table
+	table->key_table = malloc(table->max_value * sizeof(ushort));
+
+	printf("Filling lookup table with data (number of items = %i\n",
+			table->max_value);
+	// Fill table, first priority is keymap, if value is not found and value is less than 83 map directly. Else ignore
+	for (i = 0; i <= table->max_value; i++) {
+		if (i > 0 && i <= MAX_STANDARD_KEY_VALUE) {
+			// Map one to one
+			*(table->key_table + i) = i;
+		} else {
+			*(table->key_table + i) = 0;
 		}
 	}
 
-	// Device 1 data, we ignore movement data for now
-	if (data_buffer[0] == 0x01) {
-
-		// We have a movement or key end event
-		if (memcmp(data_buffer, MELE_DEVICE_1_KEY_UP, data_length) == 0) {
-			if (ignore_next_up_event_device_1 > 0) {
-				ignore_next_up_event_device_1 = 0;
-				return;
-			} else {
-				if (current_key_press_device_1 != 0) {
-					debug("Sending release for key %x\n",
-							current_key_press_device_1);
-					send_key_release_event(uinput_fd,
-							current_key_press_device_1);
-					current_key_press_device_1 = 0;
-					return;
-				}
-			}
-		}
-
-		if (data_buffer[1] == 0x00) {
-			// We have an movement event 0x01 0x00
-//			debug("Got movement event, ignoring next up event\n");
-			ignore_next_up_event_device_1 = 1;
-			return;
-		}
-
-		for (i = 0; i < NUMBER_OF_DEVICE_1_KEYS; i++) {
-			if (memcmp(data_buffer, device_1_key_table[i].data, data_length)
-					== 0) {
-				if (current_key_press_device_1 != device_1_key_table[i].key) {
-					debug("Got match. Sending key %x\n",
-							device_1_key_table[i].key);
-					send_key_press_event(uinput_fd, device_1_key_table[i].key);
-					current_key_press_device_1 = device_1_key_table[i].key;
-					ignore_next_up_event_device_1 = 0;
-					return;
-				}
-			}
-		}
+	// Overwrite with keys from lookup table
+	for (i = 0; i < number_of_items; i++) {
+		printf("Replacing key %i with key %i\n", keymap_keys[i].key,
+				keymap_keys[i].new_key);
+		*(table->key_table + keymap_keys[i].key) = keymap_keys[i].new_key;
 	}
 
-	// Device 2 data
-	if (data_buffer[0] == 0x02) {
-
-		// Key up event
-		if (memcmp(data_buffer, MELE_DEVICE_2_KEY_UP, data_length) == 0) {
-			if (current_key_press_device_2 != 0) {
-				debug("Sending release for key %x\n",
-						current_key_press_device_2);
-				send_key_release_event(uinput_fd, current_key_press_device_2);
-				current_key_press_device_2 = 0;
-				return;
-			}
-		}
-
-		for (i = 0; i < NUMBER_OF_DEVICE_2_KEYS; i++) {
-			if (memcmp(data_buffer, device_2_key_table[i].data, data_length)
-					== 0) {
-				if (current_key_press_device_2 != device_2_key_table[i].key) {
-					debug("Got match. Sending key %x\n",
-							device_2_key_table[i].key);
-					send_key_press_event(uinput_fd, device_2_key_table[i].key);
-					current_key_press_device_2 = device_2_key_table[i].key;
-					return;
-				}
-			}
-		}
-	}
+	printf("Finished creating lookup table\n");
 }
 
 int main(int argc, char **argv) {
 	pid_t pid;
 	int uinput_fd = -1;
 	struct udev_devices devices;
-	char *data_buffer;
+//	char *data_buffer;
+	struct input_event *event;
 	int ret, c, foreground;
 #ifdef DEBUG
 	int i;
@@ -143,67 +81,75 @@ int main(int argc, char **argv) {
 	if (signal(SIGTERM, signal_handler) == SIG_ERR )
 		printf("Error connecting to SIGTERM\n");
 
-	uinput_fd = setup_uinput_device();
+	// Create lookup table
+	struct key_lookup_table *lookup_table;
+	lookup_table = malloc(sizeof(struct key_lookup_table));
+	create_lookup_table(lookup_table);
+
+	uinput_fd = setup_uinput_device(lookup_table);
 	if (uinput_fd < 0) {
 		printf("Error initializing the uinput device\n");
 		exit(EXIT_FAILURE);
 	}
 
-	if (setup_udev_device(&devices) < 0) {
+	if (get_udev_input_devices(&devices) < 0) {
 		printf("Error setting up udev devices\n");
 		exit(EXIT_FAILURE);
 	}
 
-	if (open_devices(&devices) < 0) {
+	if (open_event_devices(&devices) < 0) {
 		printf("Error opening udev devices\n");
 		exit(EXIT_FAILURE);
 	}
 
 	// Parse command line arguments
-    while ((c = getopt(argc, argv, "f")) != -1) {
-        switch(c) {
-        case 'f':
-            foreground = 1;
-            break;
-        }
-    }
+	while ((c = getopt(argc, argv, "f")) != -1) {
+		switch (c) {
+		case 'f':
+			foreground = 1;
+			break;
+		}
+	}
 
-    if(foreground != 1) {
+	if (foreground != 1) {
 		printf("\nStarting in background\n");
-    	pid = fork();
-    }
-    else {
-    	printf("\nStarting in foreground\n");
-    }
+		pid = fork();
+	} else {
+		printf("\nStarting in foreground\n");
+	}
 
 	// Child process
 	if (pid == 0 || foreground) {
 
-		// Allocate memory for data buffer
-		data_buffer = malloc(30);
+//		// Allocate memory for data buffer
+//		data_buffer = malloc(30);
+
+		event = malloc(sizeof(struct input_event));
 
 		while (running) {
-			ret = read_data(&devices, data_buffer, sizeof(data_buffer));
+			ret = read_event_data(&devices, event);
 
 			if (ret > 0) {
-				send_key_from_input_data(uinput_fd, data_buffer, ret);
+//				send_key_from_input_data(uinput_fd, data_buffer, ret);
+				handle_input_event(uinput_fd, event, lookup_table);
 
 #ifdef DEBUG
-				debug("Got data (%i): ", ret);
+				debug("Got event (%hu:%hu:%hu)\n", event->type, event->code, event->value);
 
-				// Do something with the data
-				for (i = 0; i < ret; i++) {
-					debug("\\x%.2x", data_buffer[i]);
-				}
+//				// Do something with the data
+//				for (i = 0; i < ret; i++) {
+//					debug("\\x%.2x", data_buffer[i]);
+//				}
 
-				debug("\n");
+//				debug("\n");
 #endif
 			}
 		}
 
 		destroy_uinput_device(uinput_fd);
 
-		free(data_buffer);
+		free(event);
+		free(lookup_table);
 
 	} else {
 		// Parent process

@@ -21,9 +21,12 @@ struct udev_devices {
 	int max_fd; // For select
 };
 
-int setup_udev_device(struct udev_devices *devices);
-int open_devices(struct udev_devices *devices);
+int get_udev_input_devices(struct udev_devices *devices);
+int get_udev_raw_devices(struct udev_devices *devices);
+int open_event_devices(struct udev_devices *devices);
+int open_raw_devices(struct udev_devices *devices);
 void destroy_devices(struct udev_devices *devices);
-int read_data(struct udev_devices *devices, char *data, int data_length);
+int read_raw_data(struct udev_devices *devices, char *data, int data_length);
+int read_event_data(struct udev_devices *devices, struct input_event *event);
 
 #endif /* UDEV_H_ */

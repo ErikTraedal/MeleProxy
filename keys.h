@@ -1,83 +1,28 @@
 #ifndef KEYS_H_
 #define KEYS_H_
 
-#define MELE_KEY_ENTER 		"\x00\x00\x28\x00\x00\x00\x00\x00"
-#define MELE_KEY_BACK 		"\x01\x02\x00\x00\x00\x00\x00"
-#define MELE_KEY_SELECT		"\x01\x01\x00\x00\x00\x00\x00" // Center button on direction keys
-#define MELE_KEY_LEFT 		"\x00\x00\x50\x00\x00\x00\x00\x00"
-#define MELE_KEY_RIGHT 		"\x00\x00\x4f\x00\x00\x00\x00\x00"
-#define MELE_KEY_UP 		"\x00\x00\x52\x00\x00\x00\x00\x00"
-#define MELE_KEY_DOWN 		"\x00\x00\x51\x00\x00\x00\x00\x00"
-#define MELE_KEY_HOME 		"\x00\x00\x4a\x00\x00\x00\x00\x00"
-#define MELE_KEY_EPG 		"\x01\x04\x00\x00\x00\x00\x00"
-#define MELE_KEY_VOL_DOWN 	"\x02\xea\x00"
-#define MELE_KEY_VOL_UP 	"\x02\xe9\x00"
-#define MELE_KEY_INPUT 		"\x02\x89\x00"
-#define MELE_KEY_SUBTITLE 	"\x02\x41\x03"
-#define MELE_KEY_AUDIO 		"\x02\x42\x03"
-#define MELE_KEY_MUTE 		"\x02\xe2\x00"
-#define MELE_KEY_SQUARE 	"\x00\x00\x3a\x00\x00\x00\x00\x00"
-#define MELE_KEY_CROSS 		"\x00\x00\x3b\x00\x00\x00\x00\x00"
-#define MELE_KEY_CIRCLE 	"\x00\x00\x3c\x00\x00\x00\x00\x00"
-#define MELE_KEY_TRIANGLE  	"\x00\x00\x3d\x00\x00\x00\x00\x00"
-
-#define MELE_DEVICE_0_KEY_UP		"\x00\x00\x00\x00\x00\x00\x00\x00"
-#define MELE_DEVICE_1_KEY_UP		"\x01\x00\x00\x00\x00\x00\x00"
-#define MELE_DEVICE_2_KEY_UP		"\x02\x00\x00"
-
-#define OUTPUT_KEY_ENTER	KEY_ENTER
-#define OUTPUT_KEY_BACK 	KEY_BACK
-#define OUTPUT_KEY_SELECT	KEY_ENTER
-#define OUTPUT_KEY_LEFT 	KEY_LEFT
-#define OUTPUT_KEY_RIGHT 	KEY_RIGHT
-#define OUTPUT_KEY_UP 		KEY_UP
-#define OUTPUT_KEY_DOWN 	KEY_DOWN
-#define OUTPUT_KEY_HOME 	KEY_ESC
-#define OUTPUT_KEY_EPG 		KEY_C
-#define OUTPUT_KEY_VOL_DOWN KEY_KPMINUS
-#define OUTPUT_KEY_VOL_UP 	KEY_KPPLUS
-#define OUTPUT_KEY_INPUT 	KEY_ESC
-#define OUTPUT_KEY_SUBTITLE KEY_T
-#define OUTPUT_KEY_AUDIO 	KEY_AUDIO
-#define OUTPUT_KEY_MUTE 	KEY_MUTE
-#define OUTPUT_KEY_SQUARE 	KEY_X
-#define OUTPUT_KEY_CROSS 	KEY_GREEN
-#define OUTPUT_KEY_CIRCLE 	KEY_YELLOW
-#define OUTPUT_KEY_TRIANGLE KEY_P
-
-#define NUMBER_OF_DEVICE_0_KEYS 10
-#define NUMBER_OF_DEVICE_1_KEYS 3
-#define NUMBER_OF_DEVICE_2_KEYS 6
-
-static const struct {
-	char *data;
+// Keycode maping
+struct keymap {
 	ushort key;
-} device_0_key_table[NUMBER_OF_DEVICE_0_KEYS] =
-{
-	{ MELE_KEY_ENTER, OUTPUT_KEY_ENTER },
-	{ MELE_KEY_LEFT, OUTPUT_KEY_LEFT},
-	{ MELE_KEY_RIGHT, OUTPUT_KEY_RIGHT},
-	{ MELE_KEY_UP, OUTPUT_KEY_UP},
-	{ MELE_KEY_DOWN, OUTPUT_KEY_DOWN},
-	{ MELE_KEY_HOME, OUTPUT_KEY_HOME},
-	{ MELE_KEY_SQUARE, OUTPUT_KEY_SQUARE},
-	{ MELE_KEY_CROSS, OUTPUT_KEY_CROSS},
-	{ MELE_KEY_CIRCLE, OUTPUT_KEY_CIRCLE},
-	{ MELE_KEY_TRIANGLE, OUTPUT_KEY_TRIANGLE}
-}, device_1_key_table[NUMBER_OF_DEVICE_1_KEYS] =
-{
-	{ MELE_KEY_BACK, OUTPUT_KEY_BACK},
-	{ MELE_KEY_SELECT, OUTPUT_KEY_SELECT},
-	{ MELE_KEY_EPG, OUTPUT_KEY_EPG},
-}, device_2_key_table[NUMBER_OF_DEVICE_2_KEYS] =
-{
-	{ MELE_KEY_VOL_DOWN, OUTPUT_KEY_VOL_DOWN},
-	{ MELE_KEY_VOL_UP, OUTPUT_KEY_VOL_UP},
-	{ MELE_KEY_INPUT, OUTPUT_KEY_INPUT},
-	{ MELE_KEY_SUBTITLE, OUTPUT_KEY_SUBTITLE},
-	{ MELE_KEY_AUDIO, OUTPUT_KEY_AUDIO},
-	{ MELE_KEY_MUTE, OUTPUT_KEY_MUTE},
+	ushort new_key;
 };
+
+// Keys from 1 to 83 are automatically mapped, so they don't need to be mentioned here but they can be overridden if needed
+static const struct keymap keymap_keys[] = {
+		{KEY_VOLUMEUP, KEY_KPPLUS},
+		{KEY_VOLUMEDOWN, KEY_KPMINUS},
+		{BTN_LEFT, KEY_OK},
+		{BTN_RIGHT, KEY_PREVIOUS},
+		{BTN_MIDDLE, KEY_EPG},
+		{KEY_LEFT, KEY_LEFT},
+		{KEY_RIGHT, KEY_RIGHT},
+		{KEY_UP, KEY_UP},
+		{KEY_DOWN, KEY_DOWN},
+		{KEY_HOME, KEY_HOME},
+		{KEY_TV, KEY_TV},
+		{KEY_MUTE, KEY_MUTE}
+};
+
 
 
 #endif /* KEYS_H_ */
