@@ -311,10 +311,10 @@ int read_event_data(struct udev_devices *devices, struct input_event *event) {
 
 int parse_key_data(char *key_data, struct input_event *event) {
 	if (key_data[0] == 0x02) {
-		printf("Got key data from raw device, got key: ");
+		debug("Got key data from raw device, got key: ");
 		// Check against actual data
 		if (memcmp(key_data, MELE_KEY_AUDIO, 3) == 0) {
-			printf("AUDIO key\n");
+			debug("AUDIO key\n");
 			event->code = KEY_AUDIO;
 			event->type = EV_KEY;
 			event->value = 1;
@@ -323,7 +323,7 @@ int parse_key_data(char *key_data, struct input_event *event) {
 		}
 
 		if (memcmp(key_data, MELE_KEY_EJECT, 3) == 0) {
-			printf("EJECT key\n");
+			debug("EJECT key\n");
 			event->code = KEY_EJECTCD;
 			event->type = EV_KEY;
 			event->value = 1;
@@ -332,7 +332,7 @@ int parse_key_data(char *key_data, struct input_event *event) {
 		}
 
 		if (memcmp(key_data, MELE_KEY_SUBTITLE, 3) == 0) {
-			printf("SUBTITLE key\n");
+			debug("SUBTITLE key\n");
 			event->code = KEY_SUBTITLE;
 			event->type = EV_KEY;
 			event->value = 1;
@@ -340,7 +340,7 @@ int parse_key_data(char *key_data, struct input_event *event) {
 			return SEND_SYN_AFTER_KEY;
 		}
 
-		printf("NONE, ignoring\n");
+		debug("NONE, ignoring\n");
 	}
 
 	return 0;

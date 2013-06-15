@@ -11,22 +11,27 @@ struct keymap {
 static const struct keymap keymap_keys[] = {
 		{KEY_VOLUMEUP, KEY_VOLUMEUP},
 		{KEY_VOLUMEDOWN, KEY_VOLUMEDOWN},
-		{BTN_LEFT, KEY_ENTER},
-		{BTN_RIGHT, KEY_BACKSPACE},
-		{BTN_MIDDLE, KEY_EPG},
+		{BTN_LEFT, KEY_ENTER}, // Center OK button
+		{BTN_RIGHT, KEY_BACKSPACE}, // Back button
+		{BTN_MIDDLE, KEY_I}, // Square with arrow pointing out
+		{KEY_ENTER, KEY_C}, // For some reason KEY_MENU doesn't work out of the box
 		{KEY_LEFT, KEY_LEFT},
 		{KEY_RIGHT, KEY_RIGHT},
 		{KEY_UP, KEY_UP},
 		{KEY_DOWN, KEY_DOWN},
-		{KEY_HOME, KEY_HOME},
-		{KEY_TV, KEY_TV},
+		{KEY_HOME, KEY_HOMEPAGE},
+		{KEY_TV, KEY_TAB},
 		{KEY_MUTE, KEY_MUTE},
+		{KEY_F1, KEY_STOP},
+		{KEY_F2, KEY_PREVIOUSSONG},
+		{KEY_F3, KEY_NEXTSONG},
+		{KEY_F4, KEY_PLAYPAUSE},
 		{KEY_INFO, KEY_INFO},
 		{KEY_ZOOMIN, KEY_ZOOMIN},
 		{KEY_ZOOMOUT, KEY_ZOOMOUT},
 		{KEY_SEARCH, KEY_SEARCH},
-		{KEY_SUBTITLE, KEY_SUBTITLE}, // From raw device
-		{KEY_AUDIO, KEY_AUDIO}, // From raw device
+		{KEY_SUBTITLE, KEY_T}, // From raw device
+		{KEY_AUDIO, KEY_SOUND}, // From raw device
 		{KEY_EJECTCD, KEY_EJECTCD} // From  raw device
 };
 
