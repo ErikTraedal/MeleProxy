@@ -9,8 +9,8 @@ struct keymap {
 
 // Keys from 1 to 83 are automatically mapped, so they don't need to be mentioned here but they can be overridden if needed
 static const struct keymap keymap_keys[] = {
-		{KEY_VOLUMEUP, KEY_VOLUMEUP},
-		{KEY_VOLUMEDOWN, KEY_VOLUMEDOWN},
+		{KEY_VOLUMEUP, KEY_KPPLUS},
+		{KEY_VOLUMEDOWN, KEY_KPMINUS},
 		{BTN_LEFT, KEY_ENTER}, // Center OK button
 		{BTN_RIGHT, KEY_BACKSPACE}, // Back button
 		{BTN_MIDDLE, KEY_I}, // Square with arrow pointing out
