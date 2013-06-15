@@ -23,6 +23,5 @@ The executable is named "mele"
 
 
 Installation:
-Since the software is far from finished, I don't think anyone want to install it yet.
-But you can run it from command line, and it will start to run in the background.
-For now there are no command line arguments, but debug messages (a lot of them) can be enabled by compiling with the DEBUG flag set.
+It can be installed with make install.
+To autostart, just put it in rc.local (or the one fitting for your distro).
