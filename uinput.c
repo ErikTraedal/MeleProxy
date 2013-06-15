@@ -8,17 +8,17 @@
 #include "debug.h"
 #include "keys.h"
 
-
 // Handles the input events, forwards or drops
-void handle_input_event(int uinput_fd, struct input_event *event, struct key_lookup_table *table) {
-	if(event->type != EV_REL) {
-		if(event->type == EV_KEY && *(table->key_table + event->code) != 0) {
+void handle_input_event(int uinput_fd, struct input_event *event,
+		struct key_lookup_table *table) {
+	if (event->type != EV_REL) {
+		if (event->type == EV_KEY && *(table->key_table + event->code) != 0) {
 			debug("sending event of type %i, with code %i instead of code %i\n", event->type, *(table->key_table + event->code), event->code);
+
 			event->code = *(table->key_table + event->code);
-			write(uinput_fd, event, sizeof(struct input_event));
-		} else {
-			write(uinput_fd, event, sizeof(struct input_event));
 		}
+
+		write(uinput_fd, event, sizeof(struct input_event));
 	}
 }
 
@@ -46,8 +46,8 @@ int setup_uinput_device(struct key_lookup_table *table) {
 		return -1;
 
 	// Map all keys in table
-	for(i = 1;i <= table->max_value;i++){
-		if(*(table->key_table + i) != 0) {
+	for (i = 1; i <= table->max_value; i++) {
+		if (*(table->key_table + i) != 0) {
 			ioctl(uinput_fd, UI_SET_KEYBIT, *(table->key_table + i));
 		}
 	}
@@ -68,3 +68,28 @@ int destroy_uinput_device(int uinput_fd) {
 	return close(uinput_fd);
 }
 
+void handle_key_press_event(int uinput_fd, struct input_event *event, struct key_lookup_table *table) {
+	if (*(table->key_table + event->code) != 0) {
+		debug("sending event of type %i, with code %i instead of code %i\n", event->type, *(table->key_table + event->code), event->code);
+
+		event->code = *(table->key_table + event->code);
+	}
+
+	event->value = 1;
+	write(uinput_fd, event, sizeof(struct input_event));
+	send_syn(uinput_fd);
+
+	// Key up
+	event->value = 0;
+	write(uinput_fd, event, sizeof(struct input_event));
+	send_syn(uinput_fd);
+}
+
+void send_syn(int uinput_fd) {
+	struct input_event ev;
+
+	ev.type = EV_SYN;
+	ev.code = SYN_REPORT;
+	ev.value = 0;
+	write(uinput_fd, &ev, sizeof(ev));
+}

@@ -8,6 +8,7 @@
 #include <linux/input.h>
 #include <sys/select.h>
 #include "udev.h"
+#include "debug.h"
 
 int get_udev_raw_devices(struct udev_devices *devices) {
 	struct udev *udev;
@@ -98,16 +99,15 @@ int get_udev_input_devices(struct udev_devices *devices) {
 		path = udev_list_entry_get_name(dev_list_entry);
 		printf("Found device with path %s\n", path);
 
-
 		input_dev = udev_device_new_from_syspath(udev, path);
 
 		device_node = udev_device_get_devnode(input_dev);
-		if(!device_node) continue;
+		if (!device_node)
+			continue;
 
 		printf("Got device type %s\n", device_node);
 
-		strncpy(devices->devices[devices->number_of_devices++],
-				device_node,
+		strncpy(devices->devices[devices->number_of_devices++], device_node,
 				MAX_DEVICE_NAME_LENGTH);
 
 		// Two calls is not good, but then again we only do this six times
@@ -132,10 +132,9 @@ int open_event_devices(struct udev_devices *devices) {
 		devices->fd[i] = open(devices->devices[i], O_RDONLY);
 
 		// Try to get exclusive access (we know we won't be able to grab the mouse device, but thats ok)
-		if(ioctl(devices->fd[i], EVIOCGRAB, 1) == 0) {
+		if (ioctl(devices->fd[i], EVIOCGRAB, 1) == 0) {
 			printf("Got exclusive access\n");
-		}
-		else {
+		} else {
 			printf("Failed to get exclusive access\n");
 		}
 
@@ -158,7 +157,7 @@ int open_raw_devices(struct udev_devices *devices) {
 	for (i = 0; i < devices->number_of_devices; i++) {
 		printf("Trying to open device: %s\n", devices->devices[i]);
 
-		// Try to open the device with exclusive rights
+		// Try to open the devices
 		devices->fd[i] = open(devices->devices[i], O_RDONLY);
 
 		if (devices->fd[i] < 0) {
@@ -210,6 +209,70 @@ int read_raw_data(struct udev_devices *devices, char *data, int data_length) {
 	return -1;
 }
 
+int read_udev_data(struct udev_devices *devices,
+		struct udev_devices *raw_devices, struct input_event *event) {
+	int i, ret, size, fd_max;
+	fd_set rfds;
+	char *key_data;
+
+	FD_ZERO(&rfds);
+
+	for (i = 0; i < devices->number_of_devices; i++) {
+		FD_SET(devices->fd[i], &rfds);
+	}
+
+	for (i = 0; i < raw_devices->number_of_devices; i++) {
+		FD_SET(raw_devices->fd[i], &rfds);
+	}
+
+	fd_max =
+			devices->max_fd > raw_devices->max_fd ?
+					devices->max_fd : raw_devices->max_fd;
+
+	ret = select(fd_max + 1, &rfds, NULL, NULL, NULL );
+
+	if (ret == -1) {
+		perror("select()");
+		return -1;
+	}
+	if (ret) {
+		for (i = 0; i < raw_devices->number_of_devices; i++) {
+			if (FD_ISSET(raw_devices->fd[i], &rfds)) {
+				key_data = malloc(KEY_DATA_MAX_SIZE);
+
+				// Read data
+				size = read(raw_devices->fd[i], key_data,
+						sizeof(KEY_DATA_MAX_SIZE));
+				debug("Got data from raw device %s size %i\n", raw_devices->devices[i], size);
+				if (size == -1)
+					perror("read()");
+				if (size > 0) size = parse_key_data(key_data, event);
+
+				free(key_data);
+
+				// If we don't have any valid data, check for event data
+				if(size != 0) return size;
+			}
+		}
+
+		for (i = 0; i < devices->number_of_devices; i++) {
+			if (FD_ISSET(devices->fd[i], &rfds)) {
+				debug("Got data from event device %s\n", devices->devices[i]);
+				// Read data
+				size = read(devices->fd[i], event, sizeof(struct input_event));
+				if (size == -1)
+					perror("read()");
+				return size;
+			}
+		}
+	} else {
+		printf("No data\n");
+		return -1;
+	}
+
+	return -1;
+}
+
 int read_event_data(struct udev_devices *devices, struct input_event *event) {
 	// If we don't have any data, there is nothing for us to do
 	// To simplify things a bit we only read from one device at a time
@@ -222,26 +285,63 @@ int read_event_data(struct udev_devices *devices, struct input_event *event) {
 		FD_SET(devices->fd[i], &rfds);
 	}
 
-	ret = select(devices->max_fd + 1, &rfds, NULL, NULL, NULL);
+	ret = select(devices->max_fd + 1, &rfds, NULL, NULL, NULL );
 
 	if (ret == -1) {
 		perror("select()");
 		return -1;
 	}
-	if(ret) {
+	if (ret) {
 		for (i = 0; i < devices->number_of_devices; i++) {
 			if (FD_ISSET(devices->fd[i], &rfds)) {
 				// Read data
 				size = read(devices->fd[i], event, sizeof(struct input_event));
-				if(size == -1) perror("read()");
+				if (size == -1)
+					perror("read()");
 				return size;
 			}
 		}
-	}
-	else {
+	} else {
 		printf("No data\n");
 		return -1;
 	}
 
 	return -1;
+}
+
+int parse_key_data(char *key_data, struct input_event *event) {
+	if (key_data[0] == 0x02) {
+		printf("Got key data from raw device, got key: ");
+		// Check against actual data
+		if (memcmp(key_data, MELE_KEY_AUDIO, 3) == 0) {
+			printf("AUDIO key\n");
+			event->code = KEY_AUDIO;
+			event->type = EV_KEY;
+			event->value = 1;
+
+			return SEND_SYN_AFTER_KEY;
+		}
+
+		if (memcmp(key_data, MELE_KEY_EJECT, 3) == 0) {
+			printf("EJECT key\n");
+			event->code = KEY_EJECTCD;
+			event->type = EV_KEY;
+			event->value = 1;
+
+			return SEND_SYN_AFTER_KEY;
+		}
+
+		if (memcmp(key_data, MELE_KEY_SUBTITLE, 3) == 0) {
+			printf("SUBTITLE key\n");
+			event->code = KEY_SUBTITLE;
+			event->type = EV_KEY;
+			event->value = 1;
+
+			return SEND_SYN_AFTER_KEY;
+		}
+
+		printf("NONE, ignoring\n");
+	}
+
+	return 0;
 }

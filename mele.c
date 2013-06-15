@@ -21,6 +21,7 @@ ushort current_key_press_device_2;
 char ignore_next_up_event_device_1 = 0;
 
 void signal_handler(int number) {
+	printf("Stopping application\n");
 	running = 0;
 
 	// Close all handles
@@ -67,9 +68,10 @@ int main(int argc, char **argv) {
 	pid_t pid;
 	int uinput_fd = -1;
 	struct udev_devices devices;
-//	char *data_buffer;
+	struct udev_devices raw_devices;
 	struct input_event *event;
 	int ret, c, foreground = 0;
+	struct key_lookup_table *lookup_table;
 
 	debug("Compiled with debug flag\n");
 
@@ -80,7 +82,6 @@ int main(int argc, char **argv) {
 		printf("Error connecting to SIGTERM\n");
 
 	// Create lookup table
-	struct key_lookup_table *lookup_table;
 	lookup_table = malloc(sizeof(struct key_lookup_table));
 	create_lookup_table(lookup_table);
 
@@ -95,16 +96,33 @@ int main(int argc, char **argv) {
 		exit(EXIT_FAILURE);
 	}
 
+	if (get_udev_raw_devices(&raw_devices) < 0) {
+		printf("Error setting up udev devices\n");
+		exit(EXIT_FAILURE);
+	}
+
 	if (open_event_devices(&devices) < 0) {
-		printf("Error opening udev devices\n");
+		printf("Error opening udev event devices\n");
+		exit(EXIT_FAILURE);
+	}
+
+	if (open_raw_devices(&raw_devices) < 0) {
+		printf("Error opening udev raw devices\n");
 		exit(EXIT_FAILURE);
 	}
 
 	// Parse command line arguments
-	while ((c = getopt(argc, argv, "f")) != -1) {
+	while ((c = getopt(argc, argv, "fhd")) != -1) {
 		switch (c) {
+		case '?':
+		case 'h':
+			show_usage(argc, argv);
+			return 0;
 		case 'f':
 			foreground = 1;
+			break;
+		case 'd':
+			// I guess I should implement this at some point
 			break;
 		}
 	}
@@ -121,12 +139,14 @@ int main(int argc, char **argv) {
 		event = malloc(sizeof(struct input_event));
 
 		while (running) {
-			ret = read_event_data(&devices, event);
+			ret = read_udev_data(&devices, &raw_devices, event);
 
 			if (ret > 0) {
-				handle_input_event(uinput_fd, event, lookup_table);
-
 				debug("Got event (%hu:%hu:%hu)\n", event->type, event->code, event->value);
+				handle_input_event(uinput_fd, event, lookup_table);
+			} else if(ret == SEND_SYN_AFTER_KEY) {
+				debug("Got event (%hu:%hu:%hu) and sent syn afterwards\n", event->type, event->code, event->value);
+				handle_key_press_event(uinput_fd, event, lookup_table);
 			}
 		}
 
@@ -138,4 +158,12 @@ int main(int argc, char **argv) {
 	}
 
 	return 0;
+}
+
+void show_usage(int argc, char **argv) {
+	printf("Usage: %s [OPTION]\n", *argv);
+	printf("Starts a proxy service for the Mele F10 remote control\n\n");
+	printf("Arguments:\n");
+	printf("\t-f\tRun in foreground (don't run in background)\n");
+	printf("\t-d\tShow debug information\n");
 }
