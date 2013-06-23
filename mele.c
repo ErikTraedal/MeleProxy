@@ -92,12 +92,12 @@ int main(int argc, char **argv) {
 	}
 
 	if (get_udev_input_devices(&devices) < 0) {
-		printf("Error setting up udev devices\n");
+		printf("Error setting up udev event devices\n");
 		exit(EXIT_FAILURE);
 	}
 
 	if (get_udev_raw_devices(&raw_devices) < 0) {
-		printf("Error setting up udev devices\n");
+		printf("Error setting up udev raw devices\n");
 		exit(EXIT_FAILURE);
 	}
 

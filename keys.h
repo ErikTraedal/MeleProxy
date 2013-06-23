@@ -22,7 +22,7 @@ static const struct keymap keymap_keys[] = {
 		{KEY_HOME, KEY_HOMEPAGE},
 		{KEY_TV, KEY_TAB},
 		{KEY_MUTE, KEY_MUTE},
-		{KEY_F1, KEY_STOP},
+		{KEY_F1, KEY_STOPCD},
 		{KEY_F2, KEY_PREVIOUSSONG},
 		{KEY_F3, KEY_NEXTSONG},
 		{KEY_F4, KEY_PLAYPAUSE},
