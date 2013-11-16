@@ -29,4 +29,4 @@ uinput.o : uinput.c
 	$(CC) $(CFLAGS) uinput.c
 	
 clean :
-	rm -f *.o
+	rm -f *.o $(TARGET)
